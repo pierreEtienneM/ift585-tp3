@@ -14,6 +14,9 @@ def tryConnecting(username,password):
     
     if success.decode("utf-8") == "Success":
         quit()
+    else :
+        addWrongAuthentification()
+
 
 def login():
     global window
@@ -43,6 +46,9 @@ def login():
 
     window.mainloop()
 
+def addWrongAuthentification():
+    ttk.Label(window, text = 'Wrong username or password.. Try again' ).place(x=100,y=20)
+
 def close():
         s.close()
 
@@ -51,7 +57,6 @@ def quit():
 
 # Create socket for server
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
-
 
 #start the login interface
 login()

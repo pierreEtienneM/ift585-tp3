@@ -25,7 +25,7 @@ def validateLogin(username,password):
             #on cree maybe la clé d'authentification..
             #on redirige l'interface vers la page d'accueil
             return (True, user['id'])
-    return False
+    return (False, None)
 
 while True:
     print("*** Listenning ***")
