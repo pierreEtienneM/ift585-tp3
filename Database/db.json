@@ -1,0 +1,28 @@
+{   
+    "folder": [{
+        "id": 1,
+        "name": "test",
+        "files": [],
+        "invitedClients": [],
+        "clients": [],
+        "administratorId": 1
+    }],
+    "file" : [{
+        "id": 1,
+        "name": "",
+        "type": "",
+        "size": 5,
+        "data": "a voir la data"
+    }],
+    "user" : [
+        {
+            "id": 1,
+            "name": "bob",
+            "password": "secret"
+        },{
+            "id": 2,
+            "name": "alexa",
+            "password": "cache"
+        }
+    ]
+}
