@@ -1,10 +1,10 @@
 ## Python version 3.9 utilisé, mais python 3+ devrait fonctionner
 
-## module à installer:
+## Module à installer:
 ```bash
-	- pip install requests
-	- pip install flask
-	- pip install tkinter
+pip install requests
+pip install flask
+pip install tkinter
 ```
 
 ## Étape pour fonctionnement de l'application:
