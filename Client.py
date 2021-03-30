@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, NE, NW
+from tkinter import ttk, X, LEFT, RIGHT
 import socket
 import requests
  
@@ -11,13 +11,17 @@ PORT = 3839
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
 
 def showNavigation(frame, controller):
-    homeButton = ttk.Button(frame, text ="Accueil",
-        command = lambda : controller.show_frame(Home))
-    homeButton.grid(row = 0, column=0)
+    navigationFrame = tk.Frame(frame)
+    navigationFrame.pack(fill=X)
 
-    disconnectButton = ttk.Button(frame, text ="Me déconnecter",
+    homeButton = ttk.Button(navigationFrame, text ="Accueil",
         command = lambda : controller.show_frame(Home))
-    disconnectButton.grid(row = 0, column=12)
+    homeButton.pack(side=LEFT, padx=5, pady=5)
+
+    disconnectButton = ttk.Button(navigationFrame, text ="Me déconnecter",
+        command = lambda : controller.show_frame(LoginPage))
+    disconnectButton.pack(side=RIGHT, padx=5, pady=5)
+
 
 class tkinterApp(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -94,6 +98,7 @@ class LoginPage(tk.Frame):
 class Home(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+        showNavigation(self, controller)
 
         def repositoriesCommand():
             controller.show_frame(Repositories)
@@ -117,7 +122,7 @@ class Repositories(tk.Frame):
         showNavigation(self, controller)
 
         label = ttk.Label(self, text ="Mes répertoires", font = MEDIUMFONT)
-        label.grid(row = 1, column = 0, columnspan=12, padx = 10, pady = 10)
+        label.pack(side=LEFT, padx=5, pady=5)
 
 
 # Page d'un repertoire qui liste les fichiers contenus
@@ -127,7 +132,7 @@ class Repository(tk.Frame):
         showNavigation(self, controller)
 
         label = ttk.Label(self, text ="Répertoire XXX", font = MEDIUMFONT)
-        label.grid(row = 1, column = 0, columnspan=12, padx = 10, pady = 10)
+        label.pack(side=LEFT, padx=5, pady=5)
 
 
 # Page qui liste les invitations d'un utilisateur a rejoindre un repertoire
@@ -137,7 +142,7 @@ class Invites(tk.Frame):
         showNavigation(self, controller)
 
         label = ttk.Label(self, text ="Invitations", font = MEDIUMFONT)
-        label.grid(row = 1, column = 0, columnspan=12, padx = 10, pady = 10)
+        label.pack(side=LEFT, padx=5, pady=5)
 
   
 # Lancement de l'application
