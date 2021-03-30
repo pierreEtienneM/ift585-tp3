@@ -3,6 +3,7 @@ import sys
 import os
 import tkinter as tk
 from tkinter import ttk,Entry
+from Interface.Main import mainPage
 
 ip = "127.0.0.1"
 port = 3839
@@ -12,11 +13,15 @@ def tryConnecting(username,password):
     s.sendto(username.encode('utf-8'), (ip, port))
     s.sendto(password.encode('utf-8'), (ip, port))
     success, address = s.recvfrom(1024)
-    
-    if success.decode("utf-8") == "Success":
-        quit()
+    print(success.decode("utf-8"))
+    if success.decode("utf-8") == "True":
+        close()
+        username, address = s.recvfrom(1024)
+        userId, address = s.recvfrom(1024)
+        mainPage(username.decode('utf-8'),userId.decode('utf-8'))
     else :
-        addWrongAuthentification()
+        message, address = s.recvfrom(1024)
+        addWrongAuthentification(message.decode('utf-8'))
 
 
 def login():
@@ -47,14 +52,11 @@ def login():
 
     window.mainloop()
 
-def addWrongAuthentification():
-    ttk.Label(window, text = 'Wrong username or password.. Try again' ).place(x=100,y=20)
+def addWrongAuthentification(message):
+    ttk.Label(window, text = message).place(x=120,y=20)
 
 def close():
-        s.close()
-
-def quit():
-        window.destroy()
+    window.destroy()
 
 # Create socket for server
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
