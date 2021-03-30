@@ -10,6 +10,20 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal"
-        }
+        },
+        {
+            "name": "FolderManager (debug)",
+            "type": "python",
+            "request": "launch",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "Rest/FolderManager.py",
+                "FLASK_ENV": "development",
+            },
+            "args": [
+                "run",
+            ],
+            "jinja": false
+        },
     ]
 }
