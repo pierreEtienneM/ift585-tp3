@@ -1,7 +1,6 @@
 import socket
 import sys
 import json
-from Interface.Main import mainPage
 
 file = "Database/db.json"
 
@@ -39,8 +38,6 @@ while True:
         successMessage = "Success"
         print(address)
         s.sendto(successMessage.encode('utf-8'), address)
-        mainPage(username.decode("utf-8"), userId)
-
     s.sendto(successMessage.encode('utf-8'), address)
 s.close()
 
