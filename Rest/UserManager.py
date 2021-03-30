@@ -1,5 +1,6 @@
 import flask
 import json
+from Utils import Error, Success
 
 file = "Database/db.json"
 app = flask.Flask(__name__)
@@ -18,6 +19,6 @@ def userDisconect(userId):
     with open(file,'w') as f:
         json.dump(data,f, indent=4)
     
-    return 'OK'
+    return Success("Le client est déconnecté")
 
 app.run(host="127.0.0.1", port=5000, debug=True)
