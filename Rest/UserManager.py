@@ -1,6 +1,7 @@
 import flask
 import json
 from Utils import Error, Success
+import InviteUtils
 
 file = "Database/db.json"
 app = flask.Flask(__name__)
@@ -26,8 +27,27 @@ def userDisconect(userId):
 #####
 # AVOIR LES INVITATIONS POUR LE CLIENT <userId>
 @app.route("/users/<userId>/invites", methods=["GET"])
-def getInvites(userId):
-    print("getInvites", request)
+def getInvites(userId):    
+    # 1 - OUVRIR LA BASE DE DONNEE
+    jsondata = InviteUtils.loadJson()
+    clientId = int(userId)
+    
+    if jsondata == None:
+        return Error("Erreur lors de l'ouverture de la BD.")
+
+    folders = jsondata["folder"]
+
+    # 2 - VERIFIER SI LE CLIENT EXISTE
+    found, cindex = InviteUtils.isExists(jsondata, clientId, "USER")
+    if not found:
+        return Error("Erreur lors de la recherche du client.")
+
+    invitedFolders = []
+    for folder in folders:
+        if clientId in folder["invitedClients"]:
+            invitedFolders.append(folder)
+
+    return Success(json.dumps(invitedFolders, indent = 4))
 
 # DONNER UNE REPONSE POUR LACCES DU REPERTOIRE <folderId> PAR LE CLIENT <userId>
 @app.route("/users/<userId>/invites/<folderId>", methods=["POST"])

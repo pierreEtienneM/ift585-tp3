@@ -1,5 +1,6 @@
 import tkinter as tk
 import requests as r
+import json
 
 window = tk.Tk()
 
@@ -14,8 +15,14 @@ def sendInviteCallback(clientid, folderid):
     result = r.post(url = url, json = data)
     print(result.json()["message"])
 
-def getInvitesCallback(folderid):
+def getInvitesCallback(clientid):
     print("getInvitesCallback")
+    url = ADDRESS.format("users/{}/invites".format(clientid.get()))
+    result = r.get(url = url).json()
+    if result["success"]:
+        print(json.loads(result["message"]))
+    else:
+        print(result["message"])
 
 def replyInviteCallback(clientid, folderid):
     print("getInvitesCallback")
