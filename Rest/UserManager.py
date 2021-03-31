@@ -52,7 +52,51 @@ def getInvites(userId):
 # DONNER UNE REPONSE POUR LACCES DU REPERTOIRE <folderId> PAR LE CLIENT <userId>
 @app.route("/users/<userId>/invites/<folderId>", methods=["POST"])
 def replyInvite(userId, folderId):
-    print("replyInvite", request)
+    # 1 - OUVRIR LA BASE DE DONNEE
+    jsondata = InviteUtils.loadJson()
+    answer = int(flask.request.json["answer"])
+
+    # 0 : FALSE
+    # TRUE
+
+    clientId = int(userId)
+    folderId = int(folderId)
+
+    # 2 - VERIFIER SI LE CLIENT EXISTE
+    found, cindex = InviteUtils.isExists(jsondata, clientId, "USER")
+    if not found:
+        return Error("Erreur lors de la recherche du client.")
+
+    # 3 - VERIFIER SI LE DOSSIER EXISTE
+    found, findex = InviteUtils.isExists(jsondata, folderId, "FOLDER")
+    if not found:
+        return Error("Erreur lors de la recherche du repertoire.")
+
+    folder = jsondata["folder"][findex]
+
+    isclient = clientId in folder["clients"]
+    isinvite = clientId in folder["invitedClients"]
+
+    # 4 - VERIFIER LES DEMANDES DACCESS
+    if not isinvite and not isclient:
+        return Error("Le client n'a pas eu l'access au dossier.")
+    
+    # 5 - AJOUTER L'ACCES
+    needwrite = False
+    if isinvite:
+        folder["invitedClients"].remove(clientId)
+        needwrite = True
+    
+    if answer != 0 and not isclient:
+        folder["clients"].append(clientId)
+        needwrite = True
+    
+    if needwrite:
+        InviteUtils.unloadJson(jsondata)
+
+    if answer == 0:
+        return Success("Acces enleve.")
+    return Success("Acces ajoute.")
 #####
 ## F PARTIE INVITES
 #####
