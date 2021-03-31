@@ -51,4 +51,57 @@ def upload_file(folderId):
 
         return Success("Le fichier a été téléversé")
 
-app.run(host="127.0.0.1", port=5000, debug=True)
+#####
+## D PARTIE INVITES
+#####
+# INVITER UN CLIENT <userid> AU REPERTOIRE <folderId>
+@app.route("/folders/<folderId>/clients", methods=["POST"])
+def sendInvite(folderId):    
+    # 1 - OUVRIR LA BASE DE DONNEE
+    jsondata = None
+    with open(DATABASE_FILE, "r") as datafile:
+        jsondata = json.load(datafile)
+    
+    if jsondata == None:
+        return Error("Erreur lors de l'ouverture de la BD.")
+
+    folders = jsondata["folder"]
+    users = jsondata["user"]
+
+    # 2 - VERIFIER SI LE DOSSIER EXISTE
+    found = False
+    folderId = int(folderId)
+    for folder in folders:
+        if not found:
+            found = folder["id"] == folderId
+
+    if not found:
+        return Error("Erreur lors de la recherche du repertoire.")
+
+    # 3 - VERIFIER SI LE CLIENT EXISTE
+    found = False
+    clientId = request.json["clientId"]
+    for user in users:
+        if not found:
+            found = user["id"] == clientId
+    
+    if not found:
+        return Error("Erreur lors de la recherche du client.")
+
+    #4 - ECRIRE DANS "INVITEDCLIENTS" SI PAS DEJA PRESENT
+    for index, folder in enumerate(folders):
+        if folder["id"] == folderId:
+            if not clientId in jsondata["folder"][index]["invitedClients"]:
+                jsondata["folder"][index]["invitedClients"].append(clientId)
+    
+    with open(DATABASE_FILE, "w") as datafile:
+        datafile.write(json.dumps(jsondata, indent = 4))
+
+    return Success("ALLRIGHT")
+#####
+## F PARTIE INVITES
+#####
+
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000, debug=True)
