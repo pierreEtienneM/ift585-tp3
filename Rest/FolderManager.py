@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 import json
 import uuid
 from Utils import Error, Success
+import InviteUtils
 
 UPLOAD_FOLDER = './Database/Files'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
@@ -58,46 +59,34 @@ def upload_file(folderId):
 @app.route("/folders/<folderId>/clients", methods=["POST"])
 def sendInvite(folderId):    
     # 1 - OUVRIR LA BASE DE DONNEE
-    jsondata = None
-    with open(DATABASE_FILE, "r") as datafile:
-        jsondata = json.load(datafile)
+    jsondata = InviteUtils.loadJson()
+    clientId = request.json["clientId"]
+
+    folderId = int(folderId)
+    clientId = int(clientId)
     
     if jsondata == None:
         return Error("Erreur lors de l'ouverture de la BD.")
 
     folders = jsondata["folder"]
-    users = jsondata["user"]
 
     # 2 - VERIFIER SI LE DOSSIER EXISTE
-    found = False
-    folderId = int(folderId)
-    for folder in folders:
-        if not found:
-            found = folder["id"] == folderId
-
+    found, findex = InviteUtils.isExists(jsondata, folderId, "FOLDER")
     if not found:
         return Error("Erreur lors de la recherche du repertoire.")
 
     # 3 - VERIFIER SI LE CLIENT EXISTE
-    found = False
-    clientId = request.json["clientId"]
-    for user in users:
-        if not found:
-            found = user["id"] == clientId
-    
+    found, cindex = InviteUtils.isExists(jsondata, clientId, "USER")
     if not found:
         return Error("Erreur lors de la recherche du client.")
 
     #4 - ECRIRE DANS "INVITEDCLIENTS" SI PAS DEJA PRESENT
-    for index, folder in enumerate(folders):
-        if folder["id"] == folderId:
-            if not clientId in jsondata["folder"][index]["invitedClients"]:
-                jsondata["folder"][index]["invitedClients"].append(clientId)
-    
-    with open(DATABASE_FILE, "w") as datafile:
-        datafile.write(json.dumps(jsondata, indent = 4))
+    if not clientId in folders[findex]["invitedClients"]:
+        folders[findex]["invitedClients"].append(clientId)
 
-    return Success("ALLRIGHT")
+    InviteUtils.unloadJson(jsondata)
+
+    return Success("")
 #####
 ## F PARTIE INVITES
 #####
