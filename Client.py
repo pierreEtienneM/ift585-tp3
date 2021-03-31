@@ -1,8 +1,10 @@
 import tkinter as tk
-from tkinter import ttk, NE, NW
+from tkinter import ttk, X, LEFT, RIGHT
 import socket
 import requests
- 
+
+connected_userId = 0
+connected_username = ""
 LARGEFONT =("Verdana", 35)
 MEDIUMFONT =("Verdana", 20)
 IP = "127.0.0.1"
@@ -10,14 +12,29 @@ PORT = 3839
 # Create socket for server
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
 
-def showNavigation(frame, controller):
-    homeButton = ttk.Button(frame, text ="Accueil",
-        command = lambda : controller.show_frame(Home))
-    homeButton.grid(row = 0, column=0)
 
-    disconnectButton = ttk.Button(frame, text ="Me déconnecter",
+
+def showNavigation(frame, controller):
+    navigationFrame = tk.Frame(frame)
+    navigationFrame.pack(fill=X)
+
+    def closeProgram():
+        requests.post("http://127.0.0.1:5000/user/{0}/disconnect".format(connected_userId))
+        controller.destroy()
+    def disconnect():
+        print(connected_userId)
+        requests.post("http://127.0.0.1:5000/user/{0}/disconnect".format(connected_userId))
+        controller.show_frame(LoginPage)
+
+    homeButton = ttk.Button(navigationFrame, text ="Accueil",
         command = lambda : controller.show_frame(Home))
-    disconnectButton.grid(row = 0, column=12)
+    homeButton.pack(side=LEFT, padx=5, pady=5)
+
+    disconnectButton = ttk.Button(navigationFrame, text ="Me déconnecter", command = disconnect)
+    disconnectButton.pack(side=RIGHT, padx=5, pady=5)
+    
+    controller.protocol("WM_DELETE_WINDOW", closeProgram)
+
 
 class tkinterApp(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -81,27 +98,38 @@ class LoginPage(tk.Frame):
         s.sendto(password.encode('utf-8'), (IP, PORT))
         success, address = s.recvfrom(1024)
         
-        if success.decode("utf-8") == "Success":
+        if success.decode("utf-8") == "True":
+            global connected_username
+            global connected_userId
+            connected_username, address = s.recvfrom(1024)
+            connected_userId, address = s.recvfrom(1024)
+
+            connected_username = connected_username.decode('utf-8')
+            connected_userId = connected_userId.decode('utf-8')
+            #TODO remove le label addWrongAuthentification quand on succeed sinon les label s'empile un par dessus l'autre
+
             controller.show_frame(Home)
         else :
-            self.addWrongAuthentification()
+            message, address = s.recvfrom(1024)
+            self.addWrongAuthentification(message)
 
-    def addWrongAuthentification(self):
-        ttk.Label(self, text = 'Wrong username or password.. Try again' ).place(x=100,y=20)
+    def addWrongAuthentification(self,message):
+        ttk.Label(self, text = message).place(x=130,y=20)
   
 
 # Page d'accueil de l'utilisateur connecte
 class Home(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+        showNavigation(self, controller)
 
         def repositoriesCommand():
             controller.show_frame(Repositories)
 
         def invitesCommand():
             controller.show_frame(Invites)
-
-        ttk.Label(self, text = 'Bonjour').place(x=170,y=0)
+        #TODO pourquoi le username apparait pas, mais le userId fonctionne plus loin?
+        ttk.Label(self, text = 'Bonjour, {0}'.format(connected_username)).place(x=170,y=0)
 
         login_button=tk.Button(self,text='Mes répertoire',command=repositoriesCommand)
         login_button.place(x=100,y=170)
@@ -117,7 +145,7 @@ class Repositories(tk.Frame):
         showNavigation(self, controller)
 
         label = ttk.Label(self, text ="Mes répertoires", font = MEDIUMFONT)
-        label.grid(row = 1, column = 0, columnspan=12, padx = 10, pady = 10)
+        label.pack(side=LEFT, padx=5, pady=5)
 
 
 # Page d'un repertoire qui liste les fichiers contenus
@@ -127,7 +155,7 @@ class Repository(tk.Frame):
         showNavigation(self, controller)
 
         label = ttk.Label(self, text ="Répertoire XXX", font = MEDIUMFONT)
-        label.grid(row = 1, column = 0, columnspan=12, padx = 10, pady = 10)
+        label.pack(side=LEFT, padx=5, pady=5)
 
 
 # Page qui liste les invitations d'un utilisateur a rejoindre un repertoire
@@ -137,7 +165,7 @@ class Invites(tk.Frame):
         showNavigation(self, controller)
 
         label = ttk.Label(self, text ="Invitations", font = MEDIUMFONT)
-        label.grid(row = 1, column = 0, columnspan=12, padx = 10, pady = 10)
+        label.pack(side=LEFT, padx=5, pady=5)
 
   
 # Lancement de l'application

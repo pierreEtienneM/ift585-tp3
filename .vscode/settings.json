@@ -1,5 +1,6 @@
 {
   "python.linting.pylintEnabled": true,
   "python.linting.enabled": true,
-  "editor.tabSize": 4
+  "editor.tabSize": 4,
+  "python.pythonPath": "C:\\Program Files\\Python39\\python.exe"
 }

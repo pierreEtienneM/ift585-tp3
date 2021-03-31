@@ -22,12 +22,14 @@
         {
             "id": 1,
             "name": "bob",
-            "password": "secret"
+            "password": "secret",
+            "connectionToken": 0
         },
         {
             "id": 2,
             "name": "alexa",
-            "password": "cache"
+            "password": "cache",
+            "connectionToken": 0
         }
     ]
 }
