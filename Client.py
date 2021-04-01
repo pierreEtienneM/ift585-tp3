@@ -12,12 +12,15 @@ IP = "127.0.0.1"
 PORT = 3839
 # Create socket for server
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+greetingLabel = None
 
 
 
 def showNavigation(frame, controller):
+    global greetingLabel
+
     navigationFrame = tk.Frame(frame)
-    navigationFrame.pack(fill=X)
+    navigationFrame.pack(fill="both")    
 
     def closeProgram():
         requests.post("http://127.0.0.1:5000/user/{0}/disconnect".format(connected_userId))
@@ -26,13 +29,16 @@ def showNavigation(frame, controller):
         print(connected_userId)
         requests.post("http://127.0.0.1:5000/user/{0}/disconnect".format(connected_userId))
         controller.show_frame(LoginPage)
-
+        
     homeButton = ttk.Button(navigationFrame, text ="Accueil",
         command = lambda : controller.show_frame(Home))
     homeButton.pack(side=LEFT, padx=5, pady=5)
 
     disconnectButton = ttk.Button(navigationFrame, text ="Me déconnecter", command = disconnect)
     disconnectButton.pack(side=RIGHT, padx=5, pady=5)
+
+    greetingLabel = ttk.Label(navigationFrame, text="Bonjour {}!".format(connected_username))
+    greetingLabel.pack(expand=True, anchor="c")
 
     controller.protocol("WM_DELETE_WINDOW", closeProgram)
     
@@ -44,27 +50,39 @@ class tkinterApp(tk.Tk):
         self.title("IFT585Box")
         self.geometry("400x400")
 
+        self.topcontainer = tk.Frame(self, bg="blue")
+        showNavigation(self.topcontainer, self)
+        self.topcontainer.pack(fill="both", padx=2, pady=2)
+
         # Creation du conteneur de l'app
-        container = tk.Frame(self) 
-        container.pack(side = "top", fill = "both", expand = True)
-  
-        container.grid_rowconfigure(0, weight = 1)
-        container.grid_columnconfigure(0, weight = 1)
-  
+        self.maincontainer = tk.Frame(self, bg="red")
+        self.maincontainer.pack(fill="both", expand=True, padx=2, pady=2)
+
+        self.maincontainer.grid_rowconfigure(0, weight = 1)
+        self.maincontainer.grid_columnconfigure(0, weight = 1)
+
         # Initialisation du tableau de pages
-        self.frames = {} 
-  
+        self.frames = {}
+
         # Initialisation des pages de l'application
         for F in (LoginPage, Home, Repositories, Repository, Invites):
-            frame = F(container, self)
+            frame = F(self.maincontainer, self)
             self.frames[F] = frame
             frame.grid(row = 0, column = 0, sticky ="nsew")
-  
+
         # Affiche la page de login au lancement de l'application
         self.show_frame(LoginPage)
     
     # Affiche la page passee en parametre
     def show_frame(self, cont):
+        # Cache la barre d'identification pour la page de login
+        if cont is LoginPage:
+            self.topcontainer.pack_forget()
+        else:
+            self.maincontainer.pack_forget()
+            greetingLabel.config(text="Bonjour {}!".format(connected_username))
+            self.topcontainer.pack(fill="both", padx=2, pady=2)
+            self.maincontainer.pack(fill="both", expand=True, padx=2, pady=2)
         frame = self.frames[cont]
         if "callinitrest" in dir(frame):
             frame.callinitrest()
@@ -124,15 +142,12 @@ class LoginPage(tk.Frame):
 class Home(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        showNavigation(self, controller)
 
         def repositoriesCommand():
             controller.show_frame(Repositories)
 
         def invitesCommand():
             controller.show_frame(Invites)
-        #TODO pourquoi le username apparait pas, mais le userId fonctionne plus loin?
-        ttk.Label(self, text = 'Bonjour, {0}'.format(connected_username)).place(x=170,y=0)
 
         login_button=tk.Button(self,text='Mes répertoire',command=repositoriesCommand)
         login_button.place(x=100,y=170)
@@ -145,7 +160,6 @@ class Home(tk.Frame):
 class Repositories(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        showNavigation(self, controller)
 
         label = ttk.Label(self, text ="Mes répertoires", font = MEDIUMFONT)
         label.pack(side=LEFT, padx=5, pady=5)
@@ -155,7 +169,6 @@ class Repositories(tk.Frame):
 class Repository(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        showNavigation(self, controller)
 
         label = ttk.Label(self, text ="Répertoire XXX", font = MEDIUMFONT)
         label.pack(side=LEFT, padx=5, pady=5)
@@ -166,7 +179,6 @@ class Invites(tk.Frame):
     labeltextformat = "Invitations ({})"
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        showNavigation(self, controller)
 
         self.nbinvitations = 0
         self.label = ttk.Label(self, font = MEDIUMFONT)
