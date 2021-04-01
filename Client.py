@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, X, LEFT, RIGHT
 import socket
 import requests
+import json
 
 connected_userId = 0
 connected_username = ""
@@ -32,9 +33,9 @@ def showNavigation(frame, controller):
 
     disconnectButton = ttk.Button(navigationFrame, text ="Me déconnecter", command = disconnect)
     disconnectButton.pack(side=RIGHT, padx=5, pady=5)
-    
-    controller.protocol("WM_DELETE_WINDOW", closeProgram)
 
+    controller.protocol("WM_DELETE_WINDOW", closeProgram)
+    
 
 class tkinterApp(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -65,6 +66,8 @@ class tkinterApp(tk.Tk):
     # Affiche la page passee en parametre
     def show_frame(self, cont):
         frame = self.frames[cont]
+        if "callinitrest" in dir(frame):
+            frame.callinitrest()
         frame.tkraise()
 
 
@@ -160,13 +163,24 @@ class Repository(tk.Frame):
 
 # Page qui liste les invitations d'un utilisateur a rejoindre un repertoire
 class Invites(tk.Frame):
+    labeltextformat = "Invitations ({})"
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         showNavigation(self, controller)
 
-        label = ttk.Label(self, text ="Invitations", font = MEDIUMFONT)
-        label.pack(side=LEFT, padx=5, pady=5)
-
+        self.nbinvitations = 0
+        self.label = ttk.Label(self, font = MEDIUMFONT)
+        self.updateLabelText()
+        self.label.pack(side=LEFT, padx=5, pady=5)
+    def callinitrest(self):
+        # AVOIR LE NOMBRE D'INVITATION POUR L'UTILISATEUR CONNECTE
+        response = requests.get("http://127.0.0.1:5000/users/{}/invites".format(connected_userId)).json()
+        self.nbinvitations = 0
+        if response["success"]:
+            self.nbinvitations = len(json.loads(response["message"]))
+            self.updateLabelText()
+    def updateLabelText(self):
+        self.label.config(text=Invites.labeltextformat.format(self.nbinvitations))
   
 # Lancement de l'application
 app = tkinterApp()
