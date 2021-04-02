@@ -134,7 +134,22 @@ def replaceFile(folderId, fileId):
 # Supprime le fichier dont l'id est passe en parametre
 @app.route('/folders/<folderId>/<fileId>', methods=['DELETE'])
 def deleteFile(folderId, fileId):
-    return Success("TODO")
+    # Chargement de la BD
+    db = InviteUtils.loadJson()
+    folders = db['folder']
+    folder = next(filter(lambda f: f["id"] == folderId, folders), None)
+    fileEntry = next(filter(lambda f: f["id"] == fileId, folder["files"]), None)
+    if not fileEntry:
+        return Error("Aucun fichier n'a cet id")
+    # Suppression de l'entree du fichier dans la BD
+    newFilesArray = list(filter(lambda f: f["id"] != fileId, folder["files"]))
+    folder["files"] = newFilesArray
+    # Suppression du fichier sur le disque
+    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], fileId))
+    # Sauvegarde de la BD
+    InviteUtils.unloadJson(db)
+    # Reponse a l'utilisateur
+    return Success("Le fichier a été supprimé")
 
 # Change l'administrateur d'un repertoire
 @app.route('/folders/<folderId>/admin', methods=['POST'])
