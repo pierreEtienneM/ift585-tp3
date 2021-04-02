@@ -19,6 +19,54 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Obtient la liste des repertoires de l'utilisateur connecte    
+@app.route('/folders', methods=['GET'])
+def getFolders():
+    userId = "1"
+    db = InviteUtils.loadJson()
+    folders = db["folder"]
+    userFolders = list(filter(lambda f: userId in f["clients"], folders))
+    for folder in userFolders:
+        folder.pop("files", None)
+    return json.dumps(userFolders, indent = 4)
+
+# Crée un répertoire pour l’utilisateur connecté  
+@app.route('/folders', methods=['POST'])
+def createFolder():
+    # Chargement de la BD
+    db = InviteUtils.loadJson()
+    folders = db["folder"]
+    # Obtention des infos
+    body = request.json
+    userId = "1"
+    folderName = body["name"]
+    if not folderName:
+        return Error("Le nom du dossier est requis")
+    # Creation du dossier
+    folderId = uuid.uuid4().hex
+    newfolder = {
+        "id": folderId,
+        "name": folderName,
+        "files": [],
+        "invitedClients": [],
+        "clients": [userId],
+        "administrator": userId
+    }
+    folders.append(newfolder)
+    # Sauvegarde de la BD
+    InviteUtils.unloadJson(db)
+    # Reponse a l'utilisateur
+    return json.dumps(newfolder, indent = 4)
+
+# Obtient la liste de fichiers d'un repartoire    
+@app.route('/folders/<folderId>', methods=['GET'])
+def getFolder(folderId):
+    db = InviteUtils.loadJson()
+    folders = db["folder"]
+    folder = next(filter(lambda f: f["id"] == folderId, folders), None)
+    return json.dumps(folder, indent = 4)
+
+# Upload un fichier
 @app.route('/folders/<folderId>/newfile', methods=['POST'])
 def upload_file(folderId):
     if 'file' not in request.files:
@@ -51,6 +99,8 @@ def upload_file(folderId):
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
         return Success("Le fichier a été téléversé")
+
+
 
 #####
 ## D PARTIE INVITES

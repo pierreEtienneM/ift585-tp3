@@ -1,32 +1,35 @@
 {
     "folder": [
         {
-            "id": 1,
+            "id": "1",
             "name": "test",
             "files": [],
             "invitedClients": [],
-            "clients": [],
-            "administratorId": 1
-        }
-    ],
-    "file": [
+            "clients": [
+                "1"
+            ],
+            "administratorId": "1"
+        },
         {
-            "id": 1,
-            "name": "",
-            "type": "",
-            "size": 5,
-            "data": "a voir la data"
+            "id": "f9f31b4993da11eb8c16484520a6fbde",
+            "name": "Mon dossier",
+            "files": [],
+            "invitedClients": [],
+            "clients": [
+                "1"
+            ],
+            "administrator": "1"
         }
     ],
     "user": [
         {
-            "id": 1,
+            "id": "1",
             "name": "bob",
             "password": "secret",
             "connectionToken": 0
         },
         {
-            "id": 2,
+            "id": "2",
             "name": "alexa",
             "password": "cache",
             "connectionToken": 0
