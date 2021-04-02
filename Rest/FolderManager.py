@@ -69,7 +69,16 @@ def getFolder(folderId):
 # Telecharge le fichier dont l'id est passe en parametre
 @app.route('/folders/<folderId>/<fileId>', methods=['GET'])
 def getFile(folderId, fileId):
-    return Success("TODO")
+    # Chargement de la BD
+    db = InviteUtils.loadJson()
+    folders = db['folder']
+    folder = next(filter(lambda f: f["id"] == folderId, folders), None)
+    fileEntry = next(filter(lambda f: f["id"] == fileId, folder["files"]), None)
+    if not fileEntry:
+        return Error("Aucun fichier n'a cet id")
+    file = open(os.path.join(app.config['UPLOAD_FOLDER'], fileId), "r")
+    # Reponse a l'utilisateur
+    return file.read()
 
 # Upload le fichier
 @app.route('/folders/<folderId>/newfile', methods=['POST'])
