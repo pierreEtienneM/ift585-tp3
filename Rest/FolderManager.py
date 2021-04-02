@@ -19,11 +19,23 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def getUserId(db, request):
+    users = db["user"]
+    connectionToken = request.headers["Authorization"]
+    user = next(filter(lambda u: u["connectionToken"] == connectionToken, users), None)
+    if user:
+        return user["id"]
+
 # Obtient la liste des repertoires de l'utilisateur connecte    
 @app.route('/folders', methods=['GET'])
 def getFolders():
-    userId = "1"
+    # Chargement de la BD
     db = InviteUtils.loadJson()
+    # Authentification
+    userId = getUserId(db, request)
+    if not userId:
+        return Error("Utilisateur n'est pas connecté")
+    # Obtention des infos
     folders = db["folder"]
     userFolders = list(filter(lambda f: userId in f["clients"], folders))
     for folder in userFolders:
@@ -35,10 +47,13 @@ def getFolders():
 def createFolder():
     # Chargement de la BD
     db = InviteUtils.loadJson()
-    folders = db["folder"]
+     # Authentification
+    userId = getUserId(db, request)
+    if not userId:
+        return Error("Utilisateur n'est pas connecté")
     # Obtention des infos
+    folders = db["folder"]
     body = request.json
-    userId = "1"
     folderName = body["name"]
     if not folderName:
         return Error("Le nom du dossier est requis")
@@ -61,7 +76,13 @@ def createFolder():
 # Affiche le contenu d’un répertoire dans l’application
 @app.route('/folders/<folderId>', methods=['GET'])
 def getFolder(folderId):
+    # Chargement de la BD
     db = InviteUtils.loadJson()
+    # Authentification
+    userId = getUserId(db, request)
+    if not userId:
+        return Error("Utilisateur n'est pas connecté")
+    # Obtention des infos
     folders = db["folder"]
     folder = next(filter(lambda f: f["id"] == folderId, folders), None)
     return json.dumps(folder, indent = 4)
@@ -71,6 +92,11 @@ def getFolder(folderId):
 def getFile(folderId, fileId):
     # Chargement de la BD
     db = InviteUtils.loadJson()
+    # Authentification
+    userId = getUserId(db, request)
+    if not userId:
+        return Error("Utilisateur n'est pas connecté")
+    # Obtention des infos
     folders = db['folder']
     folder = next(filter(lambda f: f["id"] == folderId, folders), None)
     fileEntry = next(filter(lambda f: f["id"] == fileId, folder["files"]), None)
@@ -93,9 +119,13 @@ def postFile(folderId):
         return Error("Format de fichier non autorisé")
     # Chargement de la BD
     db = InviteUtils.loadJson()
+    # Authentification
+    userId = getUserId(db, request)
+    if not userId:
+        return Error("Utilisateur n'est pas connecté")
+    # Obtention des infos
     folders = db['folder']
     folder = next(filter(lambda f: f["id"] == folderId, folders), None)
-    # Obtention des infos
     filename = secure_filename(file.filename)
     fileId =  str(uuid.uuid1())
     # Sauvegarde du fichier sur le disque
@@ -124,12 +154,16 @@ def replaceFile(folderId, fileId):
         return Error("Format de fichier non autorisé")
     # Chargement de la BD
     db = InviteUtils.loadJson()
+    # Authentification
+    userId = getUserId(db, request)
+    if not userId:
+        return Error("Utilisateur n'est pas connecté")
+    # Obtention des infos
     folders = db['folder']
     folder = next(filter(lambda f: f["id"] == folderId, folders), None)
     fileEntry = next(filter(lambda f: f["id"] == fileId, folder["files"]), None)
     if not fileEntry:
         return Error("Aucun fichier n'a cet id")
-    # Obtention des infos
     filename = secure_filename(file.filename)
     # Sauvegarde du fichier sur le disque
     file.save(os.path.join(app.config['UPLOAD_FOLDER'], fileId))
@@ -145,6 +179,11 @@ def replaceFile(folderId, fileId):
 def deleteFile(folderId, fileId):
     # Chargement de la BD
     db = InviteUtils.loadJson()
+    # Authentification
+    userId = getUserId(db, request)
+    if not userId:
+        return Error("Utilisateur n'est pas connecté")
+    # Obtention des infos
     folders = db['folder']
     folder = next(filter(lambda f: f["id"] == folderId, folders), None)
     fileEntry = next(filter(lambda f: f["id"] == fileId, folder["files"]), None)
@@ -165,11 +204,14 @@ def deleteFile(folderId, fileId):
 def changeAdmin(folderId):
     # Chargement de la BD
     db = InviteUtils.loadJson()
+    # Authentification
+    userId = getUserId(db, request)
+    if not userId:
+        return Error("Utilisateur n'est pas connecté")
+    # Obtention des infos
     folders = db["folder"]
     folder = next(filter(lambda f: f["id"] == folderId, folders), None)
-    # Obtention des infos
     body = request.json
-    userId = "1"
     newAdminUserId = body["userId"]
     if folder["administrator"] is not userId:
         return Error("Seul l'administrateur peut modifier l'administrateur")

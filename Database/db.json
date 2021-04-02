@@ -31,13 +31,13 @@
             "id": "1",
             "name": "bob",
             "password": "secret",
-            "connectionToken": 0
+            "connectionToken": "authorizationToken"
         },
         {
             "id": "2",
             "name": "alexa",
             "password": "cache",
-            "connectionToken": 0
+            "connectionToken": "abc"
         }
     ]
 }
