@@ -73,42 +73,63 @@ def getFile(folderId, fileId):
 
 # Upload le fichier
 @app.route('/folders/<folderId>/newfile', methods=['POST'])
-def upload_file(folderId):
+def postFile(folderId):
+    # Validations
     if 'file' not in request.files:
         return Error("Aucun fichier sélectionné")
     file = request.files['file']
     if file.filename == '':
         return Error("Aucun fichier sélectionné")
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-
-        # Ajout dans la BD
-        with open(DATABASE_FILE) as databaseFile:
-            db = json.load(databaseFile)
-        folders = db['folder']
-        for folder in folders:
-            if str(folder['id']) == folderId:
-                fileEntry = {
-                    "id": str(uuid.uuid1()),
-                    "name": filename,
-                    "type": "XXX",
-                    "size": "XXX",
-                }
-                folder["files"].append(fileEntry)
-
-        json_object = json.dumps(db, indent = 4)
-        with open(DATABASE_FILE, 'w') as outfile:
-            outfile.write(json_object)
-
-        # Sauvegarde du fichier
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
-        return Success("Le fichier a été téléversé")
+    if file and not allowed_file(file.filename):
+        return Error("Format de fichier non autorisé")
+    # Chargement de la BD
+    db = InviteUtils.loadJson()
+    folders = db['folder']
+    folder = next(filter(lambda f: f["id"] == folderId, folders), None)
+    # Obtention des infos
+    filename = secure_filename(file.filename)
+    fileId =  str(uuid.uuid1())
+    # Sauvegarde du fichier sur le disque
+    file.save(os.path.join(app.config['UPLOAD_FOLDER'], fileId))
+    # Creation de l'entree du fichier
+    fileEntry = {
+        "id": fileId,
+        "name": filename,
+    }
+    folder["files"].append(fileEntry)
+    # Sauvegarde de la BD
+    InviteUtils.unloadJson(db)
+    # Reponse a l'utilisateur
+    return Success("Le fichier a été téléversé")
 
 # Telecharge le fichier dont l'id est passe en parametre
 @app.route('/folders/<folderId>/<fileId>', methods=['PUT'])
 def replaceFile(folderId, fileId):
-    return Success("TODO")
+    # Validations
+    if 'file' not in request.files:
+        return Error("Aucun fichier sélectionné")
+    file = request.files['file']
+    if file.filename == '':
+        return Error("Aucun fichier sélectionné")
+    if file and not allowed_file(file.filename):
+        return Error("Format de fichier non autorisé")
+    # Chargement de la BD
+    db = InviteUtils.loadJson()
+    folders = db['folder']
+    folder = next(filter(lambda f: f["id"] == folderId, folders), None)
+    fileEntry = next(filter(lambda f: f["id"] == fileId, folder["files"]), None)
+    if not fileEntry:
+        return Error("Aucun fichier n'a cet id")
+    # Obtention des infos
+    filename = secure_filename(file.filename)
+    # Sauvegarde du fichier sur le disque
+    file.save(os.path.join(app.config['UPLOAD_FOLDER'], fileId))
+    # Modification de l'entree du fichier
+    fileEntry["name"] = filename
+    # Sauvegarde de la BD
+    InviteUtils.unloadJson(db)
+    # Reponse a l'utilisateur
+    return Success("Le fichier a été téléversé")
 
 # Supprime le fichier dont l'id est passe en parametre
 @app.route('/folders/<folderId>/<fileId>', methods=['DELETE'])

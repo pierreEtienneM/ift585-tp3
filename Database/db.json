@@ -13,7 +13,12 @@
         {
             "id": "6adb8525af224e6eb3352c7b6388ad27",
             "name": "Mon dossier test",
-            "files": [],
+            "files": [
+                {
+                    "id": "987a2af2-93de-11eb-a59e-484520a6fbde",
+                    "name": "testFile.txt"
+                }
+            ],
             "invitedClients": [],
             "clients": [
                 "1"
