@@ -58,7 +58,7 @@ def createFolder():
     # Reponse a l'utilisateur
     return json.dumps(newfolder, indent = 4)
 
-# Obtient la liste de fichiers d'un repartoire    
+# Affiche le contenu d’un répertoire dans l’application
 @app.route('/folders/<folderId>', methods=['GET'])
 def getFolder(folderId):
     db = InviteUtils.loadJson()
@@ -66,7 +66,12 @@ def getFolder(folderId):
     folder = next(filter(lambda f: f["id"] == folderId, folders), None)
     return json.dumps(folder, indent = 4)
 
-# Upload un fichier
+# Telecharge le fichier dont l'id est passe en parametre
+@app.route('/folders/<folderId>/<fileId>', methods=['GET'])
+def getFile(folderId, fileId):
+    return Success("TODO")
+
+# Upload le fichier
 @app.route('/folders/<folderId>/newfile', methods=['POST'])
 def upload_file(folderId):
     if 'file' not in request.files:
@@ -99,6 +104,38 @@ def upload_file(folderId):
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
         return Success("Le fichier a été téléversé")
+
+# Telecharge le fichier dont l'id est passe en parametre
+@app.route('/folders/<folderId>/<fileId>', methods=['PUT'])
+def replaceFile(folderId, fileId):
+    return Success("TODO")
+
+# Supprime le fichier dont l'id est passe en parametre
+@app.route('/folders/<folderId>/<fileId>', methods=['DELETE'])
+def deleteFile(folderId, fileId):
+    return Success("TODO")
+
+# Change l'administrateur d'un repertoire
+@app.route('/folders/<folderId>/admin', methods=['POST'])
+def changeAdmin(folderId):
+    # Chargement de la BD
+    db = InviteUtils.loadJson()
+    folders = db["folder"]
+    folder = next(filter(lambda f: f["id"] == folderId, folders), None)
+    # Obtention des infos
+    body = request.json
+    userId = "1"
+    newAdminUserId = body["userId"]
+    if folder["administrator"] is not userId:
+        return Error("Seul l'administrateur peut modifier l'administrateur")
+    if not newAdminUserId:
+        return Error("L'id du nouvel admin est requis")
+    # Remplacement de l'admin
+    folder["administrator"] = newAdminUserId    
+    # Sauvegarde de la BD
+    InviteUtils.unloadJson(db)
+    # Reponse a l'utilisateur
+    return Success("L'administrateur a ete modifie")
 
 
 
