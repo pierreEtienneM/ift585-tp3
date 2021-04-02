@@ -11,12 +11,12 @@
             "administratorId": "1"
         },
         {
-            "id": "6adb8525af224e6eb3352c7b6388ad27",
-            "name": "Mon dossier test",
+            "id": "be33818d60864a12b55cd9349fdd2e4b",
+            "name": "IFT585",
             "files": [
                 {
-                    "id": "360b95b1-93e0-11eb-abe1-484520a6fbde",
-                    "name": "testFile2.txt"
+                    "id": "7c0465c10c594cd7ae9ffb6a3cdc0dfe",
+                    "name": "testFile.txt"
                 }
             ],
             "invitedClients": [],

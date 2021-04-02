@@ -21,10 +21,11 @@ def allowed_file(filename):
 
 def getUserId(db, request):
     users = db["user"]
-    connectionToken = request.headers["Authorization"]
-    user = next(filter(lambda u: u["connectionToken"] == connectionToken, users), None)
-    if user:
-        return user["id"]
+    if request.headers.get("Authorization"):
+        connectionToken = request.headers["Authorization"]
+        user = next(filter(lambda u: u["connectionToken"] == connectionToken, users), None)
+        if user:
+            return user["id"]
 
 # Obtient la liste des repertoires de l'utilisateur connecte    
 @app.route('/folders', methods=['GET'])
@@ -127,7 +128,7 @@ def postFile(folderId):
     folders = db['folder']
     folder = next(filter(lambda f: f["id"] == folderId, folders), None)
     filename = secure_filename(file.filename)
-    fileId =  str(uuid.uuid1())
+    fileId =  uuid.uuid4().hex
     # Sauvegarde du fichier sur le disque
     file.save(os.path.join(app.config['UPLOAD_FOLDER'], fileId))
     # Creation de l'entree du fichier
@@ -222,7 +223,7 @@ def changeAdmin(folderId):
     # Sauvegarde de la BD
     InviteUtils.unloadJson(db)
     # Reponse a l'utilisateur
-    return Success("L'administrateur a ete modifie")
+    return Success("L'administrateur a été modifié")
 
 
 
