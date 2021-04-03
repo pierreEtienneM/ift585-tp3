@@ -1,15 +1,17 @@
 import tkinter as tk
-from tkinter import ttk, X, LEFT, RIGHT
+from tkinter import ttk, filedialog, simpledialog
 import socket
 import requests
 import json
 
 connected_userId = 0
 connected_username = ""
+folder_id = None
 LARGEFONT =("Verdana", 35)
 MEDIUMFONT =("Verdana", 20)
 IP = "127.0.0.1"
 PORT = 3839
+ADDRESS = "http://127.0.0.1:5000"
 # Create socket for server
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
 greetingLabel = None
@@ -32,10 +34,10 @@ def showNavigation(frame, controller):
         
     homeButton = ttk.Button(navigationFrame, text ="Accueil",
         command = lambda : controller.show_frame(Home))
-    homeButton.pack(side=LEFT, padx=5, pady=5)
+    homeButton.pack(side=tk.LEFT, padx=5, pady=5)
 
     disconnectButton = ttk.Button(navigationFrame, text ="Me déconnecter", command = disconnect)
-    disconnectButton.pack(side=RIGHT, padx=5, pady=5)
+    disconnectButton.pack(side=tk.RIGHT, padx=5, pady=5)
 
     greetingLabel = ttk.Label(navigationFrame, text="Bonjour {}!".format(connected_username))
     greetingLabel.pack(expand=True, anchor="c")
@@ -158,21 +160,210 @@ class Home(tk.Frame):
 
 # Page de la liste des repertoires auquel l'utilisateur connecte a acces
 class Repositories(tk.Frame):
+    buttonFolders = []
+    x_pos = 20
+    y_pos = 10
+    controller_self = None
+    canvas = None
+    vbar = None
+
     def __init__(self, parent, controller):
+        self.controller_self = controller
         tk.Frame.__init__(self, parent)
 
-        label = ttk.Label(self, text ="Mes répertoires", font = MEDIUMFONT)
-        label.pack(side=LEFT, padx=5, pady=5)
+        # Affiche la demande de nom du répertoire à créer
+        def createFolder():
+            nameFolder = simpledialog.askstring(title="", prompt="Nom du répertoire:")
+            folder = {
+                'name': nameFolder,
+            }
+            url = ADDRESS + "/folders"
+            # TODO : Changer connected_userId par le token
+            response = requests.post(url, headers={'Authorization': connected_userId}, json = folder).json()
+            message.configure(text = response.get('message'))
+
+        label = tk.Label(self, text = 'Mes répertoires')
+        label.pack()
+        newDirButton = tk.Button(self, text = 'Créer un répertoire', command = createFolder)
+        newDirButton.pack(side = tk.TOP, pady = 5)
+        message = tk.Label(self, text="")
+        message.pack()
+
+        self.canvas=tk.Canvas(self, scrollregion=(0,0,0,800))
+        self.vbar=tk.Scrollbar(self,orient=tk.VERTICAL)
+        self.vbar.pack(side=tk.RIGHT,fill=tk.Y)
+        self.vbar.config(command=self.canvas.yview)
+        self.canvas.config(yscrollcommand=self.vbar.set)
+        self.canvas.pack(expand=True,fill=tk.BOTH)
+
+        self.after(500, self.refresh)
+
+    # Affiche le frame Repository
+    def repositoryCommand(self, id):
+        global folder_id
+        folder_id = id
+        self.controller_self.show_frame(Repository)
+
+    # Supprime les boutons du frame
+    def destroyButton(self):
+        for button in self.buttonFolders:
+            button.destroy()
+        self.i = 0
+        self.x_pos = 10
+        self.y_pos = 10
+        self.buttonFolders.clear()
+
+    # Mise à jour de la liste des répertoires
+    def refresh(self):
+        global connected_userId
+        if connected_userId != 0:
+            self.destroyButton()
+            # Affichage de la liste des répertoires
+            # TODO : Changer connected_userId par le token
+            list = requests.get(ADDRESS + "/folders", headers={'Authorization': connected_userId}).json()
+            for folder in list:
+                self.buttonFolders.append(tk.Button(self.canvas, text = folder['name'], width = 20, command = lambda id = folder['id']: self.repositoryCommand(id)))       
+            
+            j = 1 
+            for button in self.buttonFolders:
+                self.x_pos = 20
+                if j%2 != 0:
+                    self.canvas.create_window(self.x_pos, self.y_pos, window=button, anchor=tk.NW)
+                    j += 1
+                else:
+                    self.x_pos = 350
+                    self.canvas.create_window(self.x_pos, self.y_pos, window=button, anchor=tk.NE)
+                    self.y_pos += 30
+                    j -= 1
+
+        # Actualise l'interface des répertoires après 1 seconde
+        self.after(1000, self.refresh)
 
 
 # Page d'un repertoire qui liste les fichiers contenus
 class Repository(tk.Frame):
+    labelFiles = []
+    commandButton = []
+    canvas = None
+    vbar = None
+    x_pos = 10
+    y_pos = 10
+    command_id = 0
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 
-        label = ttk.Label(self, text ="Répertoire XXX", font = MEDIUMFONT)
-        label.pack(side=LEFT, padx=5, pady=5)
+        # Retourne au frame des répertoires
+        def repositoriesCommand():
+            controller.show_frame(Repositories)
 
+        # TODO
+        # Change l'administrateur du répertoire
+        def changeAdmin():
+            message.configure(text = "TODO")
+
+        # TODO
+        # Envoie une invitation
+        def sendInvite():
+            message.configure(text = "TODO")
+
+        # Upload un fichier
+        def uploadFile():
+            url = ADDRESS + "/folders/" + folder_id + "/newfile"
+            files = {
+                'file': filedialog.askopenfile()
+            }
+            # TODO : Changer connected_userId par le token
+            msg = requests.post(url, files=files, headers={'Authorization': connected_userId}).json()
+            message.configure(text = msg.get('message'))
+
+        label = tk.Label(self, text = 'Répertoire')
+        label.pack()
+        message = tk.Label(self, text="")
+        message.pack()
+
+        addButton = tk.Button(self, text="Ajouter un fichier", command=uploadFile)
+        addButton.place(x=93, y=50)
+
+        inviteButton = tk.Button(self, text="Invite", command=sendInvite)
+        inviteButton.place(x=208, y=50, width=75)
+
+        adminButton = tk.Button(self, text="Changer d'admin", command=changeAdmin)
+        adminButton.place(x=295, y=50, width=100)
+
+        retour = tk.Button(self, text="Retour", command=repositoriesCommand)
+        retour.place(x=5, y=50, anchor=tk.NW, width=75)
+
+        tk.Label(self, text="Fichier").place(x = 10, y = 90)
+        # TODO 
+        # À Supprimer ?
+        tk.Label(self, text="Type").place(x = 110, y = 90)
+        tk.Label(self, text="Taille").place(x = 210, y = 90)
+        
+        self.canvas=tk.Canvas(self, scrollregion=(0,0,0,800))
+        self.vbar=tk.Scrollbar(self, orient=tk.VERTICAL)
+        self.vbar.place(x=380, y=120, height=200)
+        self.vbar.config(command=self.canvas.yview)
+        self.canvas.config(yscrollcommand=self.vbar.set)
+        self.canvas.place(x=0, y=120, height=200)
+
+        self.after(500, self.refresh)
+
+    # Supprime le fichier
+    def deleteFile(self, fileId):
+        url = ADDRESS + "/folders/" + str(folder_id) + "/" + str(fileId)
+        # TODO : Changer connected_userId par le token
+        requests.delete(url, headers={'Authorization': connected_userId}).json()
+    
+    # TODO
+    # Télécharge le fichier
+    def downloadFile(self, fileId):
+        url = ADDRESS + "/folders/" + str(folder_id) + "/" + str(fileId)
+        # TODO : Changer connected_userId par le token
+    
+    # Efface les boutons et les labels pour l'actualisation
+    def destroyButton(self):
+        for labels in self.labelFiles:
+            labels.destroy()
+        for button in self.commandButton:
+            button.destroy()
+        self.y_pos = 10
+        self.command_id = 0
+        self.commandButton.clear()
+        self.labelFiles.clear()
+
+    # Actualisation de l'interface
+    def refresh(self):
+        global folder_id
+        if folder_id != None and connected_userId != 0:
+            # Affichage de la liste des fichiers
+            self.destroyButton()
+            # TODO : Changer connected_userId par le token
+            list = requests.get(ADDRESS + "/folders/" + str(folder_id), headers={'Authorization': connected_userId}).json()
+            for files in list['files']:
+                id = files['id']
+                name = files['name']
+
+                self.labelFiles.append(tk.Label(self, text = name))
+
+                # TODO
+                # Ajouter/modifier les commandes de download et de delete
+                self.commandButton.append(tk.Button(self.canvas, text = "Télécharger", command = lambda : self.downloadFile(id)))
+                self.commandButton.append(tk.Button(self.canvas, text = "X", bg="#ff4545", fg="white", command = lambda : self.deleteFile(id)))
+        
+            for labels in self.labelFiles:
+                # Affiche le nom du fichier
+                self.canvas.create_window(self.x_pos, self.y_pos, window=labels, anchor=tk.NW)
+
+                # Affiche les bouttons télécharger et supprimer
+                downloadButton = self.commandButton[self.command_id]
+                deleteButton = self.commandButton[self.command_id+1]
+                self.canvas.create_window(self.x_pos + 270, self.y_pos, window=downloadButton, anchor=tk.NW)
+                self.canvas.create_window(self.x_pos + 345, self.y_pos, window=deleteButton, anchor=tk.NW)
+                self.command_id += 2
+                self.y_pos += 30                
+
+        # Actualise l'interface après 0.5 seconde
+        self.after(500, self.refresh)
 
 # Page qui liste les invitations d'un utilisateur a rejoindre un repertoire
 class Invites(tk.Frame):
@@ -183,7 +374,7 @@ class Invites(tk.Frame):
         self.nbinvitations = 0
         self.label = ttk.Label(self, font = MEDIUMFONT)
         self.updateLabelText()
-        self.label.pack(side=LEFT, padx=5, pady=5)
+        self.label.pack(side=tk.LEFT, padx=5, pady=5)
     def callinitrest(self):
         # AVOIR LE NOMBRE D'INVITATION POUR L'UTILISATEUR CONNECTE
         response = requests.get("http://127.0.0.1:5000/users/{}/invites".format(connected_userId)).json()
