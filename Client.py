@@ -151,7 +151,7 @@ class Home(tk.Frame):
         def invitesCommand():
             controller.show_frame(Invites)
 
-        login_button=tk.Button(self,text='Mes répertoire',command=repositoriesCommand)
+        login_button=tk.Button(self,text='Mes répertoires',command=repositoriesCommand)
         login_button.place(x=100,y=170)
 
         login_button=tk.Button(self,text='Mes invitations',command=invitesCommand)
@@ -256,21 +256,36 @@ class Repository(tk.Frame):
         def repositoriesCommand():
             controller.show_frame(Repositories)
 
-        # TODO
+        # TODO : Lister les users par leurs id ? Ou choisir dans une liste ?
         # Change l'administrateur du répertoire
         def changeAdmin():
-            message.configure(text = "TODO")
+            url = ADDRESS + "/folders/" + str(folder_id) + "/admin"
+            userId = simpledialog.askstring(title="", prompt="Entrez l'id du nouvel administrateur:")
+            body = {
+                "userId" : str(userId)
+            }
+            # TODO : Changer connected_userId par le token
+            msg = requests.post(url, json=body, headers={'Authorization': connected_userId}).json()
+            message.configure(text = msg.get('message'))
 
-        # TODO
         # Envoie une invitation
         def sendInvite():
-            message.configure(text = "TODO")
+            url = ADDRESS + "/folders/" + folder_id + "/clients"
+            clientId = simpledialog.askstring(title="", prompt="Entrez l'id de l'utilisateur à inviter:")
+            body = {
+                "clientId" : clientId
+            }
+            # TODO : Changer connected_userId par le token
+            msg = requests.post(url, json=body, headers={'Authorization': connected_userId}).json()
+            message.configure(text = msg.get('message'))
 
         # Upload un fichier
         def uploadFile():
             url = ADDRESS + "/folders/" + folder_id + "/newfile"
+            f = filedialog.askopenfilename()
+            f = open(f, 'rb')
             files = {
-                'file': filedialog.askopenfile()
+                'file': f
             }
             # TODO : Changer connected_userId par le token
             msg = requests.post(url, files=files, headers={'Authorization': connected_userId}).json()
@@ -314,11 +329,14 @@ class Repository(tk.Frame):
         # TODO : Changer connected_userId par le token
         requests.delete(url, headers={'Authorization': connected_userId}).json()
     
-    # TODO
     # Télécharge le fichier
-    def downloadFile(self, fileId):
+    def downloadFile(self, fileId, name):
         url = ADDRESS + "/folders/" + str(folder_id) + "/" + str(fileId)
         # TODO : Changer connected_userId par le token
+        file_bin = requests.get(url, headers={'Authorization': connected_userId})
+        f = filedialog.asksaveasfilename(initialfile = name, filetypes=[("All files", "*.*")])
+        f = open(f, 'wb')
+        f.write(file_bin.content)
     
     # Efface les boutons et les labels pour l'actualisation
     def destroyButton(self):
@@ -340,15 +358,13 @@ class Repository(tk.Frame):
             # TODO : Changer connected_userId par le token
             list = requests.get(ADDRESS + "/folders/" + str(folder_id), headers={'Authorization': connected_userId}).json()
             for files in list['files']:
-                id = files['id']
                 name = files['name']
 
                 self.labelFiles.append(tk.Label(self, text = name))
 
-                # TODO
                 # Ajouter/modifier les commandes de download et de delete
-                self.commandButton.append(tk.Button(self.canvas, text = "Télécharger", command = lambda : self.downloadFile(id)))
-                self.commandButton.append(tk.Button(self.canvas, text = "X", bg="#ff4545", fg="white", command = lambda : self.deleteFile(id)))
+                self.commandButton.append(tk.Button(self.canvas, text = "Télécharger", command = lambda id = files['id']: self.downloadFile(id, name)))
+                self.commandButton.append(tk.Button(self.canvas, text = "X", bg="#ff4545", fg="white", command = lambda id = files['id']: self.deleteFile(id)))
         
             for labels in self.labelFiles:
                 # Affiche le nom du fichier

@@ -8,16 +8,15 @@ from Utils import Error, Success
 import InviteUtils
 
 UPLOAD_FOLDER = './Database/Files'
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 DATABASE_FILE = 'Database/db.json'
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+######
+##  FolderManager
+######
 
 def getUserId(db, request):
     users = db["user"]
@@ -105,7 +104,7 @@ def getFile(folderId, fileId):
     fileEntry = next(filter(lambda f: f["id"] == fileId, folder["files"]), None)
     if not fileEntry:
         return Error("Aucun fichier n'a cet id")
-    file = open(os.path.join(app.config['UPLOAD_FOLDER'], fileId), "r")
+    file = open(os.path.join(app.config['UPLOAD_FOLDER'], fileId), "rb")
     # Reponse a l'utilisateur
     return file.read()
 
@@ -118,8 +117,6 @@ def postFile(folderId):
     file = request.files['file']
     if file.filename == '':
         return Error("Aucun fichier sélectionné")
-    if file and not allowed_file(file.filename):
-        return Error("Format de fichier non autorisé")
     # Chargement de la BD
     db = InviteUtils.loadJson()
     # Authentification
@@ -153,8 +150,7 @@ def replaceFile(folderId, fileId):
     file = request.files['file']
     if file.filename == '':
         return Error("Aucun fichier sélectionné")
-    if file and not allowed_file(file.filename):
-        return Error("Format de fichier non autorisé")
+
     # Chargement de la BD
     db = InviteUtils.loadJson()
     # Authentification
@@ -239,8 +235,8 @@ def sendInvite(folderId):
     jsondata = InviteUtils.loadJson()
     clientId = request.json["clientId"]
 
-    folderId = int(folderId)
-    clientId = int(clientId)
+    folderId = folderId
+    clientId = clientId
     
     if jsondata == None:
         return Error("Erreur lors de l'ouverture de la BD.")
@@ -263,11 +259,108 @@ def sendInvite(folderId):
 
     InviteUtils.unloadJson(jsondata)
 
-    return Success("")
+    return Success("Invitation envoyée")
 #####
 ## F PARTIE INVITES
 #####
 
+
+######
+##  UserManager
+######
+#serait mieux de caller server.py une méthode disconnectUser(userId) et enlever de la liste au lieu de faire ça.. mais des call de directory parent en python est de la marde..
+@app.route('/user/<userId>/disconnect', methods=['POST'])
+def userDisconect(userId):
+    with open(DATABASE_FILE) as f:
+        data = json.load(f)
+        
+        for user in data['user']:
+            if int(user['id']) == int(userId):
+                user['connectionToken'] = -1
+
+    with open(DATABASE_FILE,'w') as f:
+        json.dump(data,f, indent=4)
+    
+    return Success("Le client est déconnecté")
+
+#####
+## D PARTIE INVITES
+#####
+# AVOIR LES INVITATIONS POUR LE CLIENT <userId>
+@app.route("/users/<userId>/invites", methods=["GET"])
+def getInvites(userId):    
+    # 1 - OUVRIR LA BASE DE DONNEE
+    jsondata = InviteUtils.loadJson()
+    clientId = userId
+    
+    if jsondata == None:
+        return Error("Erreur lors de l'ouverture de la BD.")
+
+    folders = jsondata["folder"]
+
+    # 2 - VERIFIER SI LE CLIENT EXISTE
+    found, cindex = InviteUtils.isExists(jsondata, clientId, "USER")
+    if not found:
+        return Error("Erreur lors de la recherche du client.")
+
+    invitedFolders = []
+    for folder in folders:
+        if clientId in folder["invitedClients"]:
+            invitedFolders.append(folder)
+
+    return json.dumps(invitedFolders, indent = 4)
+
+# DONNER UNE REPONSE POUR LACCES DU REPERTOIRE <folderId> PAR LE CLIENT <userId>
+@app.route("/users/<userId>/invites/<folderId>", methods=["POST"])
+def replyInvite(userId, folderId):
+    # 1 - OUVRIR LA BASE DE DONNEE
+    jsondata = InviteUtils.loadJson()
+    answer = int(flask.request.json["answer"])
+
+    # 0 : FALSE
+    # TRUE
+
+    clientId = userId
+    folderId = folderId
+
+    # 2 - VERIFIER SI LE CLIENT EXISTE
+    found, cindex = InviteUtils.isExists(jsondata, clientId, "USER")
+    if not found:
+        return Error("Erreur lors de la recherche du client.")
+
+    # 3 - VERIFIER SI LE DOSSIER EXISTE
+    found, findex = InviteUtils.isExists(jsondata, folderId, "FOLDER")
+    if not found:
+        return Error("Erreur lors de la recherche du repertoire.")
+
+    folder = jsondata["folder"][findex]
+
+    isclient = clientId in folder["clients"]
+    isinvite = clientId in folder["invitedClients"]
+
+    # 4 - VERIFIER LES DEMANDES DACCESS
+    if not isinvite and not isclient:
+        return Error("Le client n'a pas eu l'access au dossier.")
+    
+    # 5 - AJOUTER L'ACCES
+    needwrite = False
+    if isinvite:
+        folder["invitedClients"].remove(clientId)
+        needwrite = True
+    
+    if answer != 0 and not isclient:
+        folder["clients"].append(clientId)
+        needwrite = True
+    
+    if needwrite:
+        InviteUtils.unloadJson(jsondata)
+
+    if answer == 0:
+        return Success("Acces enleve.")
+    return Success("Acces ajoute.")
+#####
+## F PARTIE INVITES
+#####
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)

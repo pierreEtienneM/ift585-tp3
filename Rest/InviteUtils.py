@@ -14,13 +14,13 @@ def unloadJson(jsondata):
 
 def _isFolderExists(json, folderId):
     for index, folder in enumerate(json["folder"]):
-        if int(folderId) == int(folder["id"]):
+        if folderId == folder["id"]:
             return (True, index)
     return (False, 0)
 
 def _isUserExists(json, clientId):
     for index, user in enumerate(json["user"]):
-        if int(clientId) == int(user["id"]):
+        if clientId == user["id"]:
             return (True, index)
     return (False, 0)
 

@@ -60,7 +60,8 @@ def updateToken():
             with open(file,'w') as f:
                 json.dump(data,f, indent=4)
         elif user["connectionToken"] == -1:
-            connectedUserList.remove(user['id'])
+            if user['id'] in connectedUserList:
+                connectedUserList.remove(user['id'])
             user['connectionToken'] = 0  
 
             with open(file,'w') as f:
