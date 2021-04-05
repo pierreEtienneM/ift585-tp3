@@ -15,10 +15,25 @@
             "name": "IFT585",
             "files": [
                 {
-                    "id": "7c0465c10c594cd7ae9ffb6a3cdc0dfe",
-                    "name": "testFile.txt"
+                    "id": "163b2d3032424cc4ad0e8dd49a9302a4",
+                    "name": "Computer1.txt"
+                },
+                {
+                    "id": "5da5e248d8744bb4a04b070258f7efdd",
+                    "name": "Computer2.txt"
                 }
             ],
+            "invitedClients": [],
+            "clients": [
+                "1",
+                "2"
+            ],
+            "administrator": "1"
+        },
+        {
+            "id": "0104989979c840e084f79a2da45dc867",
+            "name": "aa",
+            "files": [],
             "invitedClients": [],
             "clients": [
                 "1"
@@ -31,13 +46,13 @@
             "id": "1",
             "name": "bob",
             "password": "secret",
-            "connectionToken": "authorizationToken"
+            "connectionToken": 0
         },
         {
             "id": "2",
             "name": "alexa",
             "password": "cache",
-            "connectionToken": "abc"
+            "connectionToken": 0
         }
     ]
 }

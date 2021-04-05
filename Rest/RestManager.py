@@ -108,6 +108,20 @@ def getFile(folderId, fileId):
     # Reponse a l'utilisateur
     return file.read()
 
+# Retourne l'administrateur d'un repertoire
+@app.route('/folders/<folderId>/admin', methods=['GET'])
+def getAdmin(folderId):
+    # Chargement de la BD
+    db = InviteUtils.loadJson()
+    # Authentification
+    userId = getUserId(db, request)
+    if not userId:
+        return Error("Utilisateur n'est pas connecté")
+    # Obtention des infos
+    folders = db["folder"]
+    folder = next(filter(lambda f: f["id"] == folderId, folders), None)
+    return folder["administrator"]
+
 # Upload le fichier
 @app.route('/folders/<folderId>/newfile', methods=['POST'])
 def postFile(folderId):
@@ -216,6 +230,10 @@ def changeAdmin(folderId):
         return Error("Seul l'administrateur peut modifier l'administrateur")
     if not newAdminUserId:
         return Error("L'id du nouvel admin est requis")
+    users = db["user"]
+    user = next(filter(lambda u: u["id"] == newAdminUserId, users), None)
+    if not user:
+        return Error("L'id du nouvel admin n'existe pas")
     # Remplacement de l'admin
     folder["administrator"] = newAdminUserId    
     # Sauvegarde de la BD
@@ -252,6 +270,9 @@ def sendInvite(folderId):
     found, cindex = InviteUtils.isExists(jsondata, clientId, "USER")
     if not found:
         return Error("Erreur lors de la recherche du client.")
+
+    if not clientId in folders[findex]["administrator"]:
+        return Error("Erreur le client n'a pas les droits.")
 
     #4 - ECRIRE DANS "INVITEDCLIENTS" SI PAS DEJA PRESENT
     if not clientId in folders[findex]["invitedClients"]:

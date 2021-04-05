@@ -244,6 +244,7 @@ class Repositories(tk.Frame):
 class Repository(tk.Frame):
     labelFiles = []
     commandButton = []
+    adminButton = []
     canvas = None
     vbar = None
     x_pos = 10
@@ -255,30 +256,6 @@ class Repository(tk.Frame):
         # Retourne au frame des répertoires
         def repositoriesCommand():
             controller.show_frame(Repositories)
-
-        # TODO : Lister les users par leurs id ? Ou choisir dans une liste ?
-        # Change l'administrateur du répertoire
-        def changeAdmin():
-            url = ADDRESS + "/folders/" + folder_id + "/admin"
-            userId = simpledialog.askstring(title="", prompt="Entrez l'id du nouvel administrateur:")
-            if userId != None:
-                body = {
-                    "userId" : str(userId)
-                }
-                # TODO : Changer connected_userId par le token
-                msg = requests.post(url, json=body, headers={'Authorization': connected_userId}).json()
-                message.configure(text = msg.get('message'))
-
-        # Envoie une invitation
-        def sendInvite():
-            url = ADDRESS + "/folders/" + folder_id + "/clients"
-            clientId = simpledialog.askstring(title="", prompt="Entrez l'id de l'utilisateur à inviter:")
-            body = {
-                "clientId" : clientId
-            }
-            # TODO : Changer connected_userId par le token
-            msg = requests.post(url, json=body, headers={'Authorization': connected_userId}).json()
-            message.configure(text = msg.get('message'))
 
         # Upload un fichier
         def uploadFile():
@@ -300,12 +277,6 @@ class Repository(tk.Frame):
         addButton = tk.Button(self, text="Ajouter un fichier", command=uploadFile)
         addButton.place(x=93, y=50)
 
-        inviteButton = tk.Button(self, text="Invite", command=sendInvite)
-        inviteButton.place(x=208, y=50, width=75)
-
-        adminButton = tk.Button(self, text="Changer d'admin", command=changeAdmin)
-        adminButton.place(x=295, y=50, width=100)
-
         retour = tk.Button(self, text="Retour", command=repositoriesCommand)
         retour.place(x=5, y=50, anchor=tk.NW, width=75)
 
@@ -323,6 +294,29 @@ class Repository(tk.Frame):
         self.canvas.place(x=0, y=120, height=200)
 
         self.after(500, self.refresh)
+
+    # Envoie une invitation
+    def sendInvite(self):
+        url = ADDRESS + "/folders/" + folder_id + "/clients"
+        clientId = simpledialog.askstring(title="", prompt="Entrez l'id de l'utilisateur à inviter:")
+        if clientId != None:
+            body = {
+                "clientId" : clientId
+            }
+            # TODO : Changer connected_userId par le token
+            requests.post(url, json=body, headers={'Authorization': connected_userId}).json()
+    
+    # TODO : Lister les users par leurs id ? Ou choisir dans une liste ?
+    # Change l'administrateur du répertoire
+    def changeAdmin(self):
+        url = ADDRESS + "/folders/" + folder_id + "/admin"
+        userId = simpledialog.askstring(title="", prompt="Entrez l'id du nouvel administrateur:")
+        if userId != None:
+            body = {
+                "userId" : str(userId)
+            }
+            # TODO : Changer connected_userId par le token
+            requests.post(url, json=body, headers={'Authorization': connected_userId}).json()
 
     # Supprime le fichier
     def deleteFile(self, fileId):
@@ -345,17 +339,34 @@ class Repository(tk.Frame):
             labels.destroy()
         for button in self.commandButton:
             button.destroy()
+        for button in self.adminButton:
+            button.destroy()
         self.y_pos = 10
         self.command_id = 0
         self.commandButton.clear()
         self.labelFiles.clear()
+        self.adminButton.clear()
 
     # Actualisation de l'interface
     def refresh(self):
         global folder_id
+
         if folder_id != None and connected_userId != 0:
-            # Affichage de la liste des fichiers
+
+            # Afficher invitation et changement d'admin
             self.destroyButton()
+            response = requests.get(ADDRESS + "/folders/" + str(folder_id) + "/admin", headers={'Authorization': connected_userId})
+            administrator = response.content.decode("utf-8")
+            if administrator == connected_userId:
+                inviteButton = tk.Button(self, text="Invite", command=lambda: self.sendInvite())
+                inviteButton.place(x=208, y=50, width=75)
+                self.adminButton.append(inviteButton)
+
+                adminButton = tk.Button(self, text="Changer d'admin", command=lambda: self.changeAdmin())
+                adminButton.place(x=295, y=50, width=100)
+                self.adminButton.append(adminButton)
+
+            # Affichage de la liste des fichiers            
             # TODO : Changer connected_userId par le token
             list = requests.get(ADDRESS + "/folders/" + str(folder_id), headers={'Authorization': connected_userId}).json()
             for files in list['files']:
@@ -364,7 +375,8 @@ class Repository(tk.Frame):
                 self.labelFiles.append(tk.Label(self, text = name))
 
                 self.commandButton.append(tk.Button(self.canvas, text = "Télécharger", command = lambda id = files['id']: self.downloadFile(id, name)))
-                self.commandButton.append(tk.Button(self.canvas, text = "X", bg="#ff4545", fg="white", command = lambda id = files['id']: self.deleteFile(id)))
+                if administrator == connected_userId:
+                    self.commandButton.append(tk.Button(self.canvas, text = "X", bg="#ff4545", fg="white", command = lambda id = files['id']: self.deleteFile(id)))
         
             for labels in self.labelFiles:
                 # Affiche le nom du fichier
@@ -372,14 +384,16 @@ class Repository(tk.Frame):
 
                 # Affiche les bouttons télécharger et supprimer
                 downloadButton = self.commandButton[self.command_id]
-                deleteButton = self.commandButton[self.command_id+1]
                 self.canvas.create_window(self.x_pos + 270, self.y_pos, window=downloadButton, anchor=tk.NW)
-                self.canvas.create_window(self.x_pos + 345, self.y_pos, window=deleteButton, anchor=tk.NW)
-                self.command_id += 2
-                self.y_pos += 30                
+                self.command_id += 1
+                if administrator == connected_userId:
+                    deleteButton = self.commandButton[self.command_id]
+                    self.canvas.create_window(self.x_pos + 345, self.y_pos, window=deleteButton, anchor=tk.NW)
+                    self.command_id += 1                
+                self.y_pos += 30
 
-        # Actualise l'interface après 0.5 seconde
-        self.after(500, self.refresh)
+        # Actualise l'interface après 3 secondes
+        self.after(3000, self.refresh)
 
 # Page qui liste les invitations d'un utilisateur a rejoindre un repertoire
 class Invites(tk.Frame):
@@ -466,8 +480,8 @@ class Invites(tk.Frame):
                 self.command_id += 2
                 self.y_pos += 30                
 
-        # Actualise l'interface après 0.5 seconde
-        self.after(500, self.refresh)
+        # Actualise l'interface après 3 secondes
+        self.after(3000, self.refresh)
 
 # Lancement de l'application
 app = tkinterApp()
