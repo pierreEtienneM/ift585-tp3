@@ -114,7 +114,9 @@ class LoginPage(tk.Frame):
 
         login_button=tk.Button(self,text='Login',command=loginCommand)
         login_button.place(x=180,y=250)
-    
+
+        self.authentificationLabel = ttk.Label(self, text = "")
+        self.authentificationLabel.place(x = 130, y = 20)
     def tryConnecting(self, controller, username, password):
         # Let's try connecting through UDP protocol with username and password
         s.sendto(username.encode('utf-8'), (IP, PORT))
@@ -128,8 +130,8 @@ class LoginPage(tk.Frame):
             connected_userId, address = s.recvfrom(1024)
 
             connected_username = connected_username.decode('utf-8')
-            connected_userId = connected_userId.decode('utf-8')
-            #TODO remove le label addWrongAuthentification quand on succeed sinon les label s'empile un par dessus l'autre
+            connected_userId = connected_userId.decode('utf-8') 
+            self.addWrongAuthentification("")
 
             controller.show_frame(Home)
         else :
@@ -137,7 +139,7 @@ class LoginPage(tk.Frame):
             self.addWrongAuthentification(message)
 
     def addWrongAuthentification(self,message):
-        ttk.Label(self, text = message).place(x=130,y=20)
+        self.authentificationLabel.configure(text = message)
   
 
 # Page d'accueil de l'utilisateur connecte
