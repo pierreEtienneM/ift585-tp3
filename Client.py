@@ -259,14 +259,15 @@ class Repository(tk.Frame):
         # TODO : Lister les users par leurs id ? Ou choisir dans une liste ?
         # Change l'administrateur du répertoire
         def changeAdmin():
-            url = ADDRESS + "/folders/" + str(folder_id) + "/admin"
+            url = ADDRESS + "/folders/" + folder_id + "/admin"
             userId = simpledialog.askstring(title="", prompt="Entrez l'id du nouvel administrateur:")
-            body = {
-                "userId" : str(userId)
-            }
-            # TODO : Changer connected_userId par le token
-            msg = requests.post(url, json=body, headers={'Authorization': connected_userId}).json()
-            message.configure(text = msg.get('message'))
+            if userId != None:
+                body = {
+                    "userId" : str(userId)
+                }
+                # TODO : Changer connected_userId par le token
+                msg = requests.post(url, json=body, headers={'Authorization': connected_userId}).json()
+                message.configure(text = msg.get('message'))
 
         # Envoie une invitation
         def sendInvite():
@@ -362,7 +363,6 @@ class Repository(tk.Frame):
 
                 self.labelFiles.append(tk.Label(self, text = name))
 
-                # Ajouter/modifier les commandes de download et de delete
                 self.commandButton.append(tk.Button(self.canvas, text = "Télécharger", command = lambda id = files['id']: self.downloadFile(id, name)))
                 self.commandButton.append(tk.Button(self.canvas, text = "X", bg="#ff4545", fg="white", command = lambda id = files['id']: self.deleteFile(id)))
         
@@ -383,24 +383,92 @@ class Repository(tk.Frame):
 
 # Page qui liste les invitations d'un utilisateur a rejoindre un repertoire
 class Invites(tk.Frame):
+    labelFolders = []
+    commandButton = []
+    canvas = None
+    vbar = None
+    x_pos = 10
+    y_pos = 10
+    command_id = 0
     labeltextformat = "Invitations ({})"
+    nbinvitations = 0
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 
-        self.nbinvitations = 0
         self.label = ttk.Label(self, font = MEDIUMFONT)
         self.updateLabelText()
-        self.label.pack(side=tk.LEFT, padx=5, pady=5)
+        self.label.pack()
+
+        tk.Label(self, text="Répertoire").place(x = 10, y = 60)
+        self.canvas=tk.Canvas(self, scrollregion=(0,0,0,800))
+        self.vbar=tk.Scrollbar(self, orient=tk.VERTICAL)
+        self.vbar.place(x=380, y=90, height=230)
+        self.vbar.config(command=self.canvas.yview)
+        self.canvas.config(yscrollcommand=self.vbar.set)
+        self.canvas.place(x=0, y=90, height=230)
+
+        self.after(500, self.refresh)
+
     def callinitrest(self):
         # AVOIR LE NOMBRE D'INVITATION POUR L'UTILISATEUR CONNECTE
         response = requests.get("http://127.0.0.1:5000/users/{}/invites".format(connected_userId)).json()
         self.nbinvitations = 0
-        if response["success"]:
-            self.nbinvitations = len(json.loads(response["message"]))
-            self.updateLabelText()
+        for folders in response:
+            self.nbinvitations += 1
+        self.updateLabelText()
     def updateLabelText(self):
         self.label.config(text=Invites.labeltextformat.format(self.nbinvitations))
-  
+
+    # Reponse à l'invitation
+    def replyInvite(self, folderId, answer):
+        url = ADDRESS + "/users/" + str(connected_userId) + "/invites/" + folderId
+        invite = {
+            "answer" : str(answer)
+        }
+        requests.post(url, json=invite, headers={'Authorization': connected_userId}).json()
+        
+    # Efface les boutons et les labels pour l'actualisation
+    def destroyButton(self):
+        for labels in self.labelFolders:
+            labels.destroy()
+        for button in self.commandButton:
+            button.destroy()
+        self.y_pos = 10
+        self.command_id = 0
+        self.commandButton.clear()
+        self.labelFolders.clear()
+
+    # Actualisation de l'interface
+    def refresh(self):
+        if connected_userId != 0:
+            # Affichage de la liste des invitations
+            self.destroyButton()
+            # TODO : Changer connected_userId par le token
+            list = requests.get(ADDRESS + "/users/" + connected_userId + "/invites", headers={'Authorization': connected_userId}).json()
+            for folders in list:
+                
+                name = folders['name']
+
+                self.labelFolders.append(tk.Label(self, text = name))
+
+                self.commandButton.append(tk.Button(self.canvas, text = "Accepter", bg="#47d187", fg="white", command = lambda id = folders['id']: self.replyInvite(id, 1)))
+                self.commandButton.append(tk.Button(self.canvas, text = "Refuser", bg="#ff4545", fg="white", command = lambda id = folders['id']: self.replyInvite(id, 0)))
+        
+            for labels in self.labelFolders:
+                # Affiche le nom du répertoire
+                self.canvas.create_window(self.x_pos, self.y_pos, window=labels, anchor=tk.NW)
+
+                # Affiche les bouttons télécharger et supprimer
+                acceptButton = self.commandButton[self.command_id]
+                denyButton = self.commandButton[self.command_id+1]
+                self.canvas.create_window(self.x_pos + 240, self.y_pos, window=acceptButton, anchor=tk.NW)
+                self.canvas.create_window(self.x_pos + 305, self.y_pos, window=denyButton, anchor=tk.NW)
+                self.command_id += 2
+                self.y_pos += 30                
+
+        # Actualise l'interface après 0.5 seconde
+        self.after(500, self.refresh)
+
 # Lancement de l'application
 app = tkinterApp()
 app.mainloop()
