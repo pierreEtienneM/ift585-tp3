@@ -180,7 +180,7 @@ class Repositories(tk.Frame):
                 'name': nameFolder,
             }
             url = ADDRESS + "/folders"
-            # TODO : Changer connected_userId par le token
+            
             response = requests.post(url, headers={'Authorization': connected_userId}, json = folder).json()
             message.configure(text = response.get('message'))
 
@@ -221,7 +221,7 @@ class Repositories(tk.Frame):
         if connected_userId != 0:
             self.destroyButton()
             # Affichage de la liste des répertoires
-            # TODO : Changer connected_userId par le token
+            
             list = requests.get(ADDRESS + "/folders", headers={'Authorization': connected_userId}).json()
             for folder in list:
                 self.buttonFolders.append(tk.Button(self.canvas, text = folder['name'], width = 20, command = lambda id = folder['id']: self.repositoryCommand(id)))       
@@ -267,7 +267,7 @@ class Repository(tk.Frame):
             files = {
                 'file': f
             }
-            # TODO : Changer connected_userId par le token
+            
             msg = requests.post(url, files=files, headers={'Authorization': connected_userId}).json()
             message.configure(text = msg.get('message'))
 
@@ -283,10 +283,10 @@ class Repository(tk.Frame):
         retour.place(x=5, y=50, anchor=tk.NW, width=75)
 
         tk.Label(self, text="Fichier").place(x = 10, y = 90)
-        # TODO 
-        # À Supprimer ?
-        tk.Label(self, text="Type").place(x = 110, y = 90)
-        tk.Label(self, text="Taille").place(x = 210, y = 90)
+        
+
+
+
         
         self.canvas=tk.Canvas(self, scrollregion=(0,0,0,800))
         self.vbar=tk.Scrollbar(self, orient=tk.VERTICAL)
@@ -305,10 +305,10 @@ class Repository(tk.Frame):
             body = {
                 "clientId" : clientId
             }
-            # TODO : Changer connected_userId par le token
+            
             requests.post(url, json=body, headers={'Authorization': connected_userId}).json()
     
-    # TODO : Lister les users par leurs id ? Ou choisir dans une liste ?
+
     # Change l'administrateur du répertoire
     def changeAdmin(self):
         url = ADDRESS + "/folders/" + folder_id + "/admin"
@@ -317,19 +317,19 @@ class Repository(tk.Frame):
             body = {
                 "userId" : str(userId)
             }
-            # TODO : Changer connected_userId par le token
+            
             requests.post(url, json=body, headers={'Authorization': connected_userId}).json()
 
     # Supprime le fichier
     def deleteFile(self, fileId):
         url = ADDRESS + "/folders/" + str(folder_id) + "/" + str(fileId)
-        # TODO : Changer connected_userId par le token
+        
         requests.delete(url, headers={'Authorization': connected_userId}).json()
     
     # Télécharge le fichier
     def downloadFile(self, fileId, name):
         url = ADDRESS + "/folders/" + str(folder_id) + "/" + str(fileId)
-        # TODO : Changer connected_userId par le token
+        
         file_bin = requests.get(url, headers={'Authorization': connected_userId})
         f = filedialog.asksaveasfilename(initialfile = name, filetypes=[("All files", "*.*")])
         f = open(f, 'wb')
@@ -368,8 +368,8 @@ class Repository(tk.Frame):
                 adminButton.place(x=295, y=50, width=100)
                 self.adminButton.append(adminButton)
 
-            # Affichage de la liste des fichiers            
-            # TODO : Changer connected_userId par le token
+            # Affichage de la liste des fichiers         
+
             list = requests.get(ADDRESS + "/folders/" + str(folder_id), headers={'Authorization': connected_userId}).json()
             for files in list['files']:
                 name = files['name']
@@ -386,11 +386,11 @@ class Repository(tk.Frame):
 
                 # Affiche les bouttons télécharger et supprimer
                 downloadButton = self.commandButton[self.command_id]
-                self.canvas.create_window(self.x_pos + 270, self.y_pos, window=downloadButton, anchor=tk.NW)
+                self.canvas.create_window(self.x_pos + 200, self.y_pos, window=downloadButton, anchor=tk.NW)
                 self.command_id += 1
                 if administrator == connected_userId:
                     deleteButton = self.commandButton[self.command_id]
-                    self.canvas.create_window(self.x_pos + 345, self.y_pos, window=deleteButton, anchor=tk.NW)
+                    self.canvas.create_window(self.x_pos + 300, self.y_pos, window=deleteButton, anchor=tk.NW)
                     self.command_id += 1                
                 self.y_pos += 30
 
@@ -459,7 +459,7 @@ class Invites(tk.Frame):
         if connected_userId != 0:
             # Affichage de la liste des invitations
             self.destroyButton()
-            # TODO : Changer connected_userId par le token
+            
             list = requests.get(ADDRESS + "/users/" + connected_userId + "/invites", headers={'Authorization': connected_userId}).json()
             for folders in list:
                 
