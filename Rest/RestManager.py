@@ -23,7 +23,7 @@ def getUserId(db, request):
     if request.headers.get("Authorization"):
         connectionToken = request.headers["Authorization"]
         
-        
+
         user = next(filter(lambda u: u["id"] == connectionToken, users), None)
         if user:
             return user["id"]
@@ -252,7 +252,7 @@ def sendInvite(folderId):
     # 1 - OUVRIR LA BASE DE DONNEE
     jsondata = InviteUtils.loadJson()
     clientId = request.json["clientId"]
-
+    
     folderId = folderId
     clientId = clientId
     
@@ -271,7 +271,7 @@ def sendInvite(folderId):
     if not found:
         return Error("Erreur lors de la recherche du client.")
 
-    if not clientId in folders[findex]["administrator"]:
+    if not request.headers["Authorization"] in folders[findex]["administrator"]:
         return Error("Erreur le client n'a pas les droits.")
 
     #4 - ECRIRE DANS "INVITEDCLIENTS" SI PAS DEJA PRESENT
