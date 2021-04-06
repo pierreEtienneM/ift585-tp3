@@ -22,8 +22,8 @@ def getUserId(db, request):
     users = db["user"]
     if request.headers.get("Authorization"):
         connectionToken = request.headers["Authorization"]
-        # TODO : Garder seulement la ligne avec connectionToken, l'id utilisé seulement pour les tests
-        #user = next(filter(lambda u: u["connectionToken"] == connectionToken, users), None)
+        
+        
         user = next(filter(lambda u: u["id"] == connectionToken, users), None)
         if user:
             return user["id"]
